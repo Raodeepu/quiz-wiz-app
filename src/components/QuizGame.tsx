@@ -16,6 +16,7 @@ interface QuizGameProps {
   category: string;
   onQuizComplete: (score: number, totalQuestions: number) => void;
   onBackToHome: () => void;
+  customQuiz?: any;
 }
 
 // Sample questions for different categories
@@ -93,7 +94,7 @@ const sampleQuestions: Record<string, Question[]> = {
   ]
 };
 
-export default function QuizGame({ category, onQuizComplete, onBackToHome }: QuizGameProps) {
+export default function QuizGame({ category, onQuizComplete, onBackToHome, customQuiz }: QuizGameProps) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -101,7 +102,7 @@ export default function QuizGame({ category, onQuizComplete, onBackToHome }: Qui
   const [timeLeft, setTimeLeft] = useState(30);
   const [isAnswered, setIsAnswered] = useState(false);
 
-  const questions = sampleQuestions[category] || sampleQuestions.general;
+  const questions = customQuiz ? customQuiz.questions : (sampleQuestions[category] || sampleQuestions.general);
   const progress = ((currentQuestion + 1) / questions.length) * 100;
 
   useEffect(() => {

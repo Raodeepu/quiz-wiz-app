@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Brain, Trophy, Users, Clock } from "lucide-react";
+import { Brain, Trophy, Users, Clock, Plus, Edit } from "lucide-react";
 
 interface QuizCategory {
   id: string;
@@ -54,10 +54,21 @@ const quizCategories: QuizCategory[] = [
 
 interface QuizHomeProps {
   onStartQuiz: (category: string) => void;
+  onCreateQuiz: () => void;
+  onManageQuizzes: () => void;
 }
 
-export default function QuizHome({ onStartQuiz }: QuizHomeProps) {
+export default function QuizHome({ onStartQuiz, onCreateQuiz, onManageQuizzes }: QuizHomeProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [customQuizzes, setCustomQuizzes] = useState<any[]>([]);
+
+  // Load custom quizzes from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem("customQuizzes");
+    if (saved) {
+      setCustomQuizzes(JSON.parse(saved));
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20 p-4 flex flex-col">
@@ -76,11 +87,11 @@ export default function QuizHome({ onStartQuiz }: QuizHomeProps) {
       {/* Stats Bar */}
       <div className="grid grid-cols-3 gap-4 mb-8 animate-slide-up">
         <Card className="p-4 text-center bg-gradient-card border-border/50">
-          <div className="text-2xl font-bold text-primary">50+</div>
+          <div className="text-2xl font-bold text-primary">{50 + customQuizzes.length * 5}+</div>
           <div className="text-sm text-muted-foreground">Questions</div>
         </Card>
         <Card className="p-4 text-center bg-gradient-card border-border/50">
-          <div className="text-2xl font-bold text-accent">4</div>
+          <div className="text-2xl font-bold text-accent">{4 + customQuizzes.length}</div>
           <div className="text-sm text-muted-foreground">Categories</div>
         </Card>
         <Card className="p-4 text-center bg-gradient-card border-border/50">
@@ -89,9 +100,44 @@ export default function QuizHome({ onStartQuiz }: QuizHomeProps) {
         </Card>
       </div>
 
+      {/* Create Quiz Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 max-w-2xl mx-auto">
+        <Card
+          className="p-6 cursor-pointer transition-all duration-300 hover:scale-105 bg-gradient-primary text-white border-primary/20"
+          onClick={onCreateQuiz}
+        >
+          <div className="flex items-center space-x-4">
+            <div className="bg-white/20 p-3 rounded-full">
+              <Plus className="w-8 h-8" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-xl font-semibold">Create Quiz</h3>
+              <p className="text-white/80 text-sm">Make your own custom quiz</p>
+            </div>
+          </div>
+        </Card>
+
+        {customQuizzes.length > 0 && (
+          <Card
+            className="p-6 cursor-pointer transition-all duration-300 hover:scale-105 bg-gradient-card border-border/50"
+            onClick={onManageQuizzes}
+          >
+            <div className="flex items-center space-x-4">
+              <div className="text-accent bg-accent/10 p-3 rounded-full">
+                <Edit className="w-8 h-8" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-semibold text-foreground">My Quizzes</h3>
+                <p className="text-muted-foreground text-sm">{customQuizzes.length} custom quiz{customQuizzes.length !== 1 ? 'es' : ''}</p>
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
+
       {/* Quiz Categories */}
       <div className="flex-1 space-y-4">
-        <h2 className="text-2xl font-semibold text-center mb-6">Choose Your Challenge</h2>
+        <h2 className="text-2xl font-semibold text-center mb-6">Pre-built Categories</h2>
         <div className="grid gap-4 max-w-2xl mx-auto">
           {quizCategories.map((category, index) => (
             <Card
