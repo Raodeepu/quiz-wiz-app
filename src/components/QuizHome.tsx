@@ -61,6 +61,7 @@ interface QuizHomeProps {
 export default function QuizHome({ onStartQuiz, onCreateQuiz, onManageQuizzes }: QuizHomeProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [customQuizzes, setCustomQuizzes] = useState<any[]>([]);
+  const [isGenerating, setIsGenerating] = useState<string | null>(null);
 
   // Load custom quizzes from localStorage
   useEffect(() => {
@@ -69,6 +70,55 @@ export default function QuizHome({ onStartQuiz, onCreateQuiz, onManageQuizzes }:
       setCustomQuizzes(JSON.parse(saved));
     }
   }, []);
+
+  const generateQuizQuestions = async (categoryId: string) => {
+    setIsGenerating(categoryId);
+    try {
+      const category = quizCategories.find(c => c.id === categoryId);
+      if (!category) return;
+
+      const response = await fetch('/functions/v1/generate-quiz', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          category: category.title,
+          difficulty: 'medium',
+          numQuestions: 10
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate questions');
+      }
+
+      const data = await response.json();
+      
+      // Save generated quiz to localStorage
+      const generatedQuiz = {
+        id: `generated_${categoryId}_${Date.now()}`,
+        title: `🤖 AI Generated ${category.title} Quiz`,
+        category: categoryId,
+        questions: data.questions,
+        createdAt: new Date().toISOString(),
+        isGenerated: true
+      };
+
+      const existingQuizzes = JSON.parse(localStorage.getItem("customQuizzes") || "[]");
+      const updatedQuizzes = [...existingQuizzes, generatedQuiz];
+      localStorage.setItem("customQuizzes", JSON.stringify(updatedQuizzes));
+      setCustomQuizzes(updatedQuizzes);
+
+      // Start the generated quiz
+      onStartQuiz(generatedQuiz.id);
+    } catch (error) {
+      console.error('Error generating quiz:', error);
+      alert('Failed to generate quiz. Please try again.');
+    } finally {
+      setIsGenerating(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/20 p-4 flex flex-col">
@@ -140,7 +190,7 @@ export default function QuizHome({ onStartQuiz, onCreateQuiz, onManageQuizzes }:
         <h2 className="text-2xl font-semibold text-center mb-6">Pre-built Categories</h2>
         <div className="grid gap-4 max-w-2xl mx-auto">
           {quizCategories.map((category, index) => (
-            <Card
+              <Card
               key={category.id}
               className={`p-6 cursor-pointer transition-all duration-300 hover:scale-105 bg-gradient-card border-border/50 ${
                 selectedCategory === category.id ? 'ring-2 ring-primary shadow-lg shadow-primary/25' : ''
@@ -155,7 +205,7 @@ export default function QuizHome({ onStartQuiz, onCreateQuiz, onManageQuizzes }:
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold text-foreground">{category.title}</h3>
                   <p className="text-muted-foreground text-sm mb-2">{category.description}</p>
-                  <div className="flex items-center space-x-4 text-xs">
+                  <div className="flex items-center space-x-4 text-xs mb-3">
                     <span className="bg-secondary px-2 py-1 rounded-full">
                       {category.questionCount} questions
                     </span>
@@ -166,6 +216,31 @@ export default function QuizHome({ onStartQuiz, onCreateQuiz, onManageQuizzes }:
                     }`}>
                       {category.difficulty}
                     </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onStartQuiz(category.id);
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      Play Quiz
+                    </Button>
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        generateQuizQuestions(category.id);
+                      }}
+                      variant="default"
+                      size="sm"
+                      disabled={isGenerating === category.id}
+                      className="flex-1 bg-gradient-primary"
+                    >
+                      {isGenerating === category.id ? "🤖 Generating..." : "🤖 AI Quiz"}
+                    </Button>
                   </div>
                 </div>
               </div>
